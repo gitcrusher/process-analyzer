@@ -18,7 +18,7 @@ class Sidebar(QFrame):
         self.toggle_sidebar_button = QPushButton("≡")  # Three horizontal lines
         self.toggle_sidebar_button.setObjectName("hamburgerButton")  # For styling
         self.toggle_sidebar_button.clicked.connect(self.toggle_sidebar)
-        layout.addWidget(self.toggle_sidebar_button)
+        layout.addWidget(self.toggle_sidebar_button, alignment=Qt.AlignCenter)  # Center the button
 
         # Buttons
         self.basic_button = QPushButton("Basic View")
@@ -34,6 +34,9 @@ class Sidebar(QFrame):
         # Apply Styles
         self.style_sidebar()
         self.setLayout(layout)
+
+        # Default State: Expanded
+        self.setFixedWidth(200)
 
     def style_sidebar(self):
         # Sidebar Background Color
@@ -66,7 +69,7 @@ class Sidebar(QFrame):
                 text-align: center;
                 font-size: 18px;
                 font-weight: bold;
-                border-bottom: 1px solid {hover_color};
+                border-radius: 10px; /* Rounded corners for the square */
             }}
             QPushButton#hamburgerButton:hover {{
                 background-color: {hover_color};
@@ -76,13 +79,13 @@ class Sidebar(QFrame):
     def toggle_sidebar(self):
         if self.is_minimized:
             # Expand the sidebar
-            self.setFixedWidth(200)
+            self.setFixedSize(200, self.height())  # Reset width to expanded size
             self.basic_button.show()
             self.detailed_button.show()
             self.is_minimized = False
         else:
-            # Collapse the sidebar
-            self.setFixedWidth(50)
+            # Collapse the sidebar into a square
+            self.setFixedSize(50, 50)  # Square size: 50x50
             self.basic_button.hide()
             self.detailed_button.hide()
             self.is_minimized = True

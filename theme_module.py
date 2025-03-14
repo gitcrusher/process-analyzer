@@ -1,6 +1,6 @@
 class ThemeManager:
     def __init__(self):
-        self.dark_mode = True
+        self.dark_mode = True  # Default to dark mode
 
     def toggle_theme(self):
         self.dark_mode = not self.dark_mode
