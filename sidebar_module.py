@@ -75,8 +75,14 @@ class Sidebar(QFrame):
 
     def toggle_sidebar(self):
         if self.is_minimized:
-            self.setFixedWidth(200)  # Expand the sidebar
+            # Expand the sidebar
+            self.setFixedWidth(200)
+            self.basic_button.show()
+            self.detailed_button.show()
             self.is_minimized = False
         else:
-            self.setFixedWidth(50)  # Collapse the sidebar
+            # Collapse the sidebar
+            self.setFixedWidth(50)
+            self.basic_button.hide()
+            self.detailed_button.hide()
             self.is_minimized = True
