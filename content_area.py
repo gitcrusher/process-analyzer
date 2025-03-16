@@ -18,7 +18,6 @@ class ThemeToggleButton(QPushButton):
             }
         """)
 
-        # Slider (the moving part of the toggle)
         self.slider = QFrame(self)
         self.slider.setFixedSize(16, 16)
         self.slider.setStyleSheet("""
@@ -29,18 +28,16 @@ class ThemeToggleButton(QPushButton):
         """)
         self.slider.move(2, 2)
 
-        # Mode label with icon
         self.mode_label = QLabel(self)
-        self.mode_label.setFont(QFont("Arial", 10))  # Use Arial for better icon support
+        self.mode_label.setFont(QFont("Arial", 10))
         self.mode_label.setAlignment(Qt.AlignCenter)
         self.mode_label.setGeometry(0, 0, 40, 20)
-        self.update_label_and_color()  # Set initial label and color
+        self.update_label_and_color()
 
         self.clicked.connect(self.animate_toggle)
         self.clicked.connect(self.update_label_and_color)
 
     def animate_toggle(self):
-        """Animate the slider movement."""
         self.animation = QPropertyAnimation(self.slider, b"pos")
         self.animation.setDuration(200)
         start_pos = self.slider.pos()
@@ -50,7 +47,6 @@ class ThemeToggleButton(QPushButton):
         self.animation.start()
 
     def update_label_and_color(self):
-        """Update the label and color based on the toggle state."""
         label_text = "🌙" if not self.isChecked() else "☀"
         text_color = "#FFFFFF" if not self.isChecked() else "#333333"
         self.mode_label.setStyleSheet(f"color: {text_color};")
@@ -65,12 +61,11 @@ class ContentArea(QFrame):
 
         self.is_light_theme = False
         self.setStyleSheet("background-color: #121212;")
-        self.setMinimumHeight(600)  # Set a minimum height to stabilize the layout
+        self.setMinimumHeight(600)
 
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(10, 10, 10, 10)
 
-        # Top layout with theme toggle button
         self.top_layout = QHBoxLayout()
         self.top_layout.addStretch()
         self.theme_toggle = ThemeToggleButton(self)
@@ -78,15 +73,13 @@ class ContentArea(QFrame):
         self.top_layout.addWidget(self.theme_toggle)
         self.main_layout.addLayout(self.top_layout)
 
-        # Scrollable content area with hidden scrollbar
         self.scroll_area = QScrollArea(self)
         self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)  # Hide scrollbar
+        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.scroll_area.setFrameShape(QScrollArea.NoFrame)
         self.scroll_area.setStyleSheet("background-color: transparent; border: none;")
 
-        # Create a widget to hold the content layout
         self.content_widget = QWidget(self)
         self.content_layout = QVBoxLayout(self.content_widget)
         self.content_layout.setAlignment(Qt.AlignTop)
@@ -96,36 +89,29 @@ class ContentArea(QFrame):
 
         self.main_layout.addWidget(self.scroll_area)
 
-        # Load the Home page by default
         self.load_page("Home")
         print("Default page 'Home' loaded.")
 
-        # Enable scrolling with mouse wheel
         self.scroll_area.wheelEvent = self.wheel_event
 
     def wheel_event(self, event):
-        """Handle mouse wheel scrolling with hidden scrollbar."""
         if self.scroll_area.isVisible():
             scroll_value = self.scroll_area.verticalScrollBar().value()
             if event.angleDelta().y() > 0:
-                self.scroll_area.verticalScrollBar().setValue(scroll_value - 20)  # Scroll up
+                self.scroll_area.verticalScrollBar().setValue(scroll_value - 20)
             else:
-                self.scroll_area.verticalScrollBar().setValue(scroll_value + 20)  # Scroll down
+                self.scroll_area.verticalScrollBar().setValue(scroll_value + 20)
             event.accept()
 
     def toggle_theme(self):
-        """Toggle the theme and emit the signal."""
         self.is_light_theme = not self.is_light_theme
         self.update_theme()
         print(f"Emitting theme_changed: {self.is_light_theme}")
         self.theme_changed.emit(self.is_light_theme)
 
     def update_theme(self):
-        """Update the content area styling based on the theme."""
         print(f"Updating content area theme to {'light' if self.is_light_theme else 'dark'}")
         self.setStyleSheet("background-color: #F0F0F0;" if self.is_light_theme else "background-color: #121212;")
-
-        # Update text color for all child widgets
         for i in range(self.content_layout.count()):
             item = self.content_layout.itemAt(i)
             if item and item.widget():
@@ -140,10 +126,7 @@ class ContentArea(QFrame):
         print("Content area theme updated.")
 
     def load_page(self, page_name):
-        """Load the selected page into the content area."""
         print(f"Loading page: {page_name}")
-
-        # Clear existing content
         for i in reversed(range(self.content_layout.count())):
             item = self.content_layout.takeAt(i)
             if item and item.widget():
@@ -153,9 +136,10 @@ class ContentArea(QFrame):
         self.content_layout.update()
 
         try:
-            # Dynamically load the requested page
             if page_name == "Home":
+                print("Attempting to instantiate HomePage...")
                 page = HomePage(self)
+                print("HomePage instantiated successfully.")
             elif page_name == "Performance":
                 page = PerformancePage(self)
             elif page_name == "System":
@@ -166,13 +150,12 @@ class ContentArea(QFrame):
                     "color: red; font-size: 24px;" if not self.is_light_theme else "color: darkred; font-size: 24px;"
                 )
 
-            # Add the new page to the content layout inside the scroll area
             self.content_layout.addWidget(page, alignment=Qt.AlignTop)
-            self.content_layout.addStretch()  # Ensure layout fills space without pushing down
+            self.content_layout.addStretch()
             print(f"Page '{page_name}' loaded successfully.")
 
         except ImportError as e:
-            print(f"ImportError: {e}")
+            print(f"ImportError in load_page: {e}")
             error_label = QLabel("Error loading page (check imports)", self)
             error_label.setStyleSheet(
                 "color: red; font-size: 24px;" if not self.is_light_theme else "color: darkred; font-size: 24px;"
@@ -180,7 +163,7 @@ class ContentArea(QFrame):
             self.content_layout.addWidget(error_label)
 
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            print(f"Unexpected error in load_page: {e}")
             error_label = QLabel("Error loading page", self)
             error_label.setStyleSheet(
                 "color: red; font-size: 24px;" if not self.is_light_theme else "color: darkred; font-size: 24px;"
