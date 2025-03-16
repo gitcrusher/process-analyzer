@@ -1,138 +1,152 @@
-from PyQt5.QtWidgets import QFrame, QPushButton, QVBoxLayout
-from PyQt5.QtCore import QPropertyAnimation, QEasingCurve, pyqtSignal, Qt
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFrame
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 
-class Sidebar(QFrame):
-    page_changed = pyqtSignal(str)
+class Sidebar(QWidget):
+    # Define signals
+    button_clicked = pyqtSignal(str)  # Signal emitted when a navigation button is clicked, passes the page name
+    theme_toggled = pyqtSignal(bool)  # Signal emitted when the theme toggle button is clicked, passes the theme state
 
     def __init__(self, parent=None):
         super().__init__(parent)
         print("Initializing Sidebar...")
-
-        # Sidebar properties
-        self.sidebar_width = 250
-        self.compressed_width = 50
-        self.setMinimumWidth(self.compressed_width)
-        self.setMaximumWidth(self.compressed_width)
-        self.setStyleSheet("""
-            background-color: #333333;
-            color: #FFFFFF;
-            border-right: 2px solid white; /* Thin white border for dark theme */
-        """)
+        self.setFixedWidth(50)
         print("Sidebar width set to 50px initially.")
 
-        # Font settings
-        self.setFont(QFont("Roboto", 14))
+        # Set font (assuming the parent is FuturisticDashboard with custom_font)
+        self.setFont(parent.custom_font if parent and hasattr(parent, 'custom_font') else QFont("Arial", 12))
         print("Font set for Sidebar.")
 
-        # Main layout
-        self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(0, 0, 0, 0)  # Remove margins for a clean look
+        # Main layout for the sidebar
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(10, 10, 10, 10)
+        self.layout.setSpacing(10)
+        self.layout.setAlignment(Qt.AlignTop)
         print("Main layout created.")
 
-        # Toggle button
-        self.toggle_button = QPushButton("≡", self)
-        self.toggle_button.setFont(self.font())
+        # Theme toggle button
+        self.toggle_button = QPushButton("☀", self)
+        self.toggle_button.setFixedSize(30, 30)
+        self.toggle_button.setCheckable(True)
         self.toggle_button.setStyleSheet("""
             QPushButton {
-                background-color: blue;
-                color: white;
+                background-color: #555555;
+                color: #FFFFFF;
                 border: none;
-                padding: 10px;
-                font-size: 24px;
+                border-radius: 15px;
             }
             QPushButton:hover {
-                background-color: #2C2C3E; /* Default hover effect for dark theme */
+                background-color: #777777;
+            }
+            QPushButton:checked {
+                background-color: #00FFD1;
+                color: #000000;
             }
         """)
-        self.toggle_button.setFixedSize(50, 50)
-        self.toggle_button.clicked.connect(self.toggle_sidebar)
-        self.main_layout.addWidget(self.toggle_button, alignment=Qt.AlignTop | Qt.AlignLeft)
+        self.toggle_button.clicked.connect(self.on_theme_toggled)
+        self.layout.addWidget(self.toggle_button, alignment=Qt.AlignCenter)
         print("Toggle button added.")
 
-        # Navigation container
+        # Navigation buttons container
         self.nav_container = QFrame(self)
-        self.nav_container.setStyleSheet("background-color: transparent;")
-        self.button_layout = QVBoxLayout(self.nav_container)
-        self.button_layout.setAlignment(Qt.AlignTop)
-        self.create_buttons()
-        self.main_layout.addWidget(self.nav_container)
-        self.main_layout.addStretch()
-        self.nav_container.setVisible(False)
-        print("Navigation container initially hidden.")
+        self.nav_layout = QVBoxLayout(self.nav_container)
+        self.nav_layout.setContentsMargins(0, 0, 0, 0)
+        self.nav_layout.setSpacing(10)
+        self.nav_layout.setAlignment(Qt.AlignTop)
 
-    def create_buttons(self):
-        """Create sidebar buttons."""
         print("Creating sidebar buttons...")
-        options = ["Home", "Performance", "System"]
-        for option in options:
-            button = QPushButton(option, self)
-            button.setFont(self.font())
-            button.setStyleSheet("""
+        self.buttons = {}
+        for page in ["Home", "Performance", "System"]:
+            btn = QPushButton(page, self.nav_container)
+            btn.setFixedSize(30, 30)
+            btn.setStyleSheet("""
                 QPushButton {
-                    text-align: left;
-                    padding: 15px;
+                    background-color: #1E1E2F;
+                    color: #FFFFFF;
                     border: none;
-                    background-color: transparent;
-                    font-size: 16px;
+                    border-radius: 15px;
                 }
                 QPushButton:hover {
-                    background-color: #2C2C3E; /* Default hover effect for dark theme */
+                    background-color: #3A3A51;
+                }
+                QPushButton:checked {
+                    background-color: #00FFD1;
+                    color: #000000;
                 }
             """)
-            button.clicked.connect(lambda _, page=option: self.page_changed.emit(page))
-            self.button_layout.addWidget(button)
-            print(f"Button '{option}' created.")
+            btn.setCheckable(True)
+            btn.clicked.connect(lambda checked, p=page: self.on_button_clicked(p))
+            self.buttons[page] = btn
+            self.nav_layout.addWidget(btn, alignment=Qt.AlignCenter)
+            print(f"Button '{page}' created.")
+
+        self.buttons["Home"].setChecked(True)  # Default to Home page
+        self.nav_container.setVisible(False)
         print("Sidebar buttons added to container.")
+        print("Navigation container initially hidden.")
+        self.layout.addWidget(self.nav_container)
 
-    def toggle_sidebar(self):
-        """Toggle the sidebar between expanded and compressed states."""
-        print("Toggling sidebar...")
-        current_width = self.width()
-        is_compressed = current_width <= self.compressed_width
-        new_width = self.sidebar_width if is_compressed else self.compressed_width
+        # Expand/collapse sidebar on hover
+        self.setMouseTracking(True)
 
-        # Animate the width change
-        self.min_anim = QPropertyAnimation(self, b"minimumWidth")
-        self.max_anim = QPropertyAnimation(self, b"maximumWidth")
-        for anim in (self.min_anim, self.max_anim):
-            anim.setDuration(300)
-            anim.setStartValue(current_width)
-            anim.setEndValue(new_width)
-            anim.setEasingCurve(QEasingCurve.InOutQuart)
-            anim.start()
+    def enterEvent(self, event):
+        self.setFixedWidth(200)
+        for btn in self.buttons.values():
+            btn.setFixedWidth(150)
+        self.nav_container.setVisible(True)
 
-        def on_animation_finished():
-            self.nav_container.setVisible(new_width > self.compressed_width)
-            print(f"Animation finished. New width: {self.width()}, Nav visible: {self.nav_container.isVisible()}")
+    def leaveEvent(self, event):
+        self.setFixedWidth(50)
+        for btn in self.buttons.values():
+            btn.setFixedWidth(30)
+        self.nav_container.setVisible(False)
 
-        self.max_anim.finished.connect(on_animation_finished)
+    def on_button_clicked(self, page):
+        for btn in self.buttons.values():
+            btn.setChecked(False)
+        self.buttons[page].setChecked(True)
+        print(f"Sidebar button clicked: {page}")
+        self.button_clicked.emit(page)  # Emit the signal with the page name
+
+    def on_theme_toggled(self):
+        is_light_theme = self.toggle_button.isChecked()
+        print(f"Theme toggled: {'Light' if is_light_theme else 'Dark'}")
+        self.theme_toggled.emit(is_light_theme)  # Emit the signal with the theme state
 
     def update_theme(self, is_light_theme):
-        """Update the sidebar's styling based on the theme."""
-        border_color = "black" if is_light_theme else "white"
-        hover_color = "#F0F0F0" if is_light_theme else "#2C2C3E"  # Very light grey for light mode, dark grey for dark mode
-
-        self.setStyleSheet(f"""
-            background-color: {'#D0D0D0' if is_light_theme else '#333333'};
-            color: {'#000000' if is_light_theme else '#FFFFFF'};
-            border-right: 2px solid {border_color}; /* Thin border with theme-relative color */
+        bg_color = "#E0E0E0" if is_light_theme else "#1E1E2F"
+        btn_bg_color = "#FFFFFF" if is_light_theme else "#1E1E2F"
+        btn_text_color = "#333333" if is_light_theme else "#FFFFFF"
+        btn_hover_color = "#CCCCCC" if is_light_theme else "#3A3A51"
+        self.setStyleSheet(f"background-color: {bg_color};")
+        for btn in self.buttons.values():
+            btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {btn_bg_color};
+                    color: {btn_text_color};
+                    border: none;
+                    border-radius: 15px;
+                }}
+                QPushButton:hover {{
+                    background-color: {btn_hover_color};
+                }}
+                QPushButton:checked {{
+                    background-color: #00FFD1;
+                    color: #000000;
+                }}
+            """)
+        self.toggle_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {'#CCCCCC' if is_light_theme else '#555555'};
+                color: {'#333333' if is_light_theme else '#FFFFFF'};
+                border: none;
+                border-radius: 15px;
+            }}
+            QPushButton:hover {{
+                background-color: {'#AAAAAA' if is_light_theme else '#777777'};
+            }}
+            QPushButton:checked {{
+                background-color: #00FFD1;
+                color: #000000;
+            }}
         """)
-
-        # Update hover effect for all buttons
-        for i in range(self.button_layout.count()):
-            button = self.button_layout.itemAt(i).widget()
-            if button:
-                button.setStyleSheet(f"""
-                    QPushButton {{
-                        text-align: left;
-                        padding: 15px;
-                        border: none;
-                        background-color: transparent;
-                        font-size: 16px;
-                    }}
-                    QPushButton:hover {{
-                        background-color: {hover_color}; /* Theme-relative hover color */
-                    }}
-                """)
-        print(f"Sidebar updated for {'light' if is_light_theme else 'dark'} theme.")
